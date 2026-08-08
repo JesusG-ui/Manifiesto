@@ -13,6 +13,7 @@ import { fetchDrivers, fetchPackages, updatePackage } from '../../../lib/data';
 import ClaimModal from '../_components/ClaimModal';
 import EvidenceUploadModal from '../_components/EvidenceUploadModal';
 import RouteModal from '../_components/RouteModal';
+import FixLocationModal from '../_components/FixLocationModal';
 
 // Módulo de lista de paquetes del repartidor: sus pedidos, tomar uno nuevo,
 // marcar en camino / entregado (con evidencia), o reportar incidencia.
@@ -92,6 +93,7 @@ export default function RepartidorDashboardPage({ params }) {
                 onMarkEnCamino: handleMarkEnCamino,
                 onOpenEvidence: (p) => setModal({ type: 'evidence', data: p }),
                 onMarkIncident: (p) => setModal({ type: 'incident', data: p }),
+                onFixLocation: (p) => setModal({ type: 'fix-location', data: p }),
               }}
             />
           ))}
@@ -109,6 +111,9 @@ export default function RepartidorDashboardPage({ params }) {
       )}
       {modal.type === 'route' && (
         <RouteModal packages={mine} onClose={closeModal} onSaved={refresh} />
+      )}
+      {modal.type === 'fix-location' && (
+        <FixLocationModal pkg={modal.data} onClose={closeModal} onSaved={refresh} />
       )}
     </>
   );

@@ -5,7 +5,7 @@ import { fmtDate } from '../lib/format';
 
 // Tarjeta de paquete. `role` decide qué acciones se muestran.
 // admin: { drivers, onReassign, onEditLocation, onViewEvidence, onMarkIncident, onDelete }
-// driver: { onMarkEnCamino, onOpenEvidence, onMarkIncident }
+// driver: { onMarkEnCamino, onOpenEvidence, onMarkIncident, onFixLocation }
 export default function PackageCard({ pkg, role, drivers = [], actions = {} }) {
   const hasLocation = !!(pkg.lat && pkg.lon);
   const dirUrl = hasLocation
@@ -64,6 +64,7 @@ export default function PackageCard({ pkg, role, drivers = [], actions = {} }) {
             <button className="ghost-btn btn-big" disabled={pkg.status !== 'asignado'} onClick={() => actions.onMarkEnCamino && actions.onMarkEnCamino(pkg)}>En camino</button>
             <button className="ghost-btn btn-big" disabled={!(pkg.status === 'asignado' || pkg.status === 'en_camino')} onClick={() => actions.onOpenEvidence && actions.onOpenEvidence(pkg)}>Entregado</button>
             <button className="ghost-btn" onClick={() => actions.onMarkIncident && actions.onMarkIncident(pkg)}>Reportar incidencia</button>
+            <button className="ghost-btn" onClick={() => actions.onFixLocation && actions.onFixLocation(pkg)}>Corregir ubicación</button>
           </>
         )}
       </div>
