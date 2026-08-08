@@ -11,6 +11,7 @@ import PackageCard from '../../components/PackageCard';
 import IncidentModal from '../../components/IncidentModal';
 import { useToast } from '../../components/Toast';
 import { fetchDrivers, fetchPackages, reassignPackage, updatePackage, geocodeAddress } from '../../lib/data';
+import { supabase } from '../../lib/supabaseClient';
 import { STATUS } from '../../components/StatusBadge';
 import TileIcon from '../../components/TileIcon';
 
@@ -25,6 +26,7 @@ import EditLocationModal from './_components/EditLocationModal';
 import EvidenceViewModal from './_components/EvidenceViewModal';
 import DeleteConfirmModal from './_components/DeleteConfirmModal';
 import QuickAssignModal from './_components/QuickAssignModal';
+import AuthGate from './_components/AuthGate';
 
 function isEditableTarget(el) {
   if (!el) return false;
@@ -32,10 +34,19 @@ function isEditableTarget(el) {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
 }
 
+// Punto de entrada de la ruta: exige sesión (AuthGate) antes de montar el panel real.
+export default function DespachadorPage() {
+  return (
+    <AuthGate>
+      <DespachadorDashboard />
+    </AuthGate>
+  );
+}
+
 // Módulo Despachador: stats + toolbar + lista de paquetes (o mapa). Todos los "extras"
 // (captura rápida, importar, nuevo paquete, repartidores, evidencia, etc.) son sub-módulos
-// que se abren como modales desde acá.
-export default function DespachadorPage() {
+// que se abren como modales desde acá. Solo se monta una vez hay sesión válida.
+function DespachadorDashboard() {
   const showToast = useToast();
   const [drivers, setDrivers] = useState([]);
   const [packages, setPackages] = useState([]);
@@ -64,6 +75,10 @@ export default function DespachadorPage() {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+  }
 
   /* ----- Lector USB en modo teclado: escanea sin hacer clic en nada ----- */
   useEffect(() => {
@@ -156,12 +171,12 @@ export default function DespachadorPage() {
   }
 
   if (loading) {
-    return (<><Masthead roleLabel="Despachador" /><div className="loading-screen">Cargando datos…</div></>);
+    return (<><Masthead roleLabel="Despachador" onLogout={handleLogout} /><div className="loading-screen">Cargando datos…</div></>);
   }
 
   return (
     <>
-      <Masthead roleLabel="Despachador" />
+      <Masthead roleLabel="Despachador" onLogout={handleLogout} />
 
       <StatsBar list={packages} activeStatus={filterStatus} onSelect={setFilterStatus} />
 
