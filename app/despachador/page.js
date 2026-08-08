@@ -4,6 +4,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import dynamicImport from 'next/dynamic';
 import Masthead from '../../components/Masthead';
 import StatsBar from '../../components/StatsBar';
 import PackageCard from '../../components/PackageCard';
@@ -11,8 +12,10 @@ import IncidentModal from '../../components/IncidentModal';
 import { useToast } from '../../components/Toast';
 import { fetchDrivers, fetchPackages, reassignPackage, updatePackage, geocodeAddress } from '../../lib/data';
 import { STATUS } from '../../components/StatusBadge';
-import FullMap from '../../components/map/FullMap';
 import TileIcon from '../../components/TileIcon';
+
+// Leaflet toca `window` al cargarse, así que este mapa solo puede existir en el navegador.
+const FullMap = dynamicImport(() => import('../../components/map/FullMap'), { ssr: false });
 
 import AssignByScanModal from './_components/AssignByScanModal';
 import ImportModal from './_components/ImportModal';

@@ -1,10 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Modal from '../../../components/Modal';
-import RouteMap from '../../../components/map/RouteMap';
 import { useToast } from '../../../components/Toast';
 import { setRoutePositions } from '../../../lib/data';
+
+// Leaflet toca `window` al cargarse, así que este mapa solo puede existir en el navegador.
+const RouteMap = dynamic(() => import('../../../components/map/RouteMap'), { ssr: false });
 
 // Armar ruta: primero eliges qué pedidos entran (selección explícita, para no
 // mandar por error uno que no toca hoy), luego los ordenas con flechas, y por

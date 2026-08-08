@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Modal from '../../../components/Modal';
 import { useToast } from '../../../components/Toast';
 import { createPackage, geocodeAddress, updatePackage } from '../../../lib/data';
-import PinPickerMap from '../../../components/map/PinPickerMap';
 import { useReverseGeocode } from '../../../hooks/useReverseGeocode';
+
+// Leaflet toca `window` al cargarse, así que este mapa solo puede existir en el navegador.
+const PinPickerMap = dynamic(() => import('../../../components/map/PinPickerMap'), { ssr: false });
 
 // Alta manual de un paquete, con mapa para marcar el punto exacto de entrega.
 export default function AddPackageModal({ drivers, initialTrackingCode = '', onClose, onSaved }) {
