@@ -12,6 +12,7 @@ const PATHS = {
   download: 'M12 4v12M7 11l5 5 5-5M5 20h14',
   box: 'M21 8 12 3 3 8l9 5 9-5ZM3 8v9l9 5m9-14v9l-9 5m0-9v9',
   scan: 'M4 4h4M4 4v4M20 4h-4M20 4v4M4 20h4M4 20v-4M20 20h-4M20 20v-4M6 9v6M9 8v8M12 8v8M15 9v6M18 8v8',
+  lock: 'M6 11V7a6 6 0 0 1 12 0v4M4 11h16v9H4Zm8 5v-3',
 };
 
 const COLORS = {

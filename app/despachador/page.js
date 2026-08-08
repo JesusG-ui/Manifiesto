@@ -27,6 +27,7 @@ import EvidenceViewModal from './_components/EvidenceViewModal';
 import DeleteConfirmModal from './_components/DeleteConfirmModal';
 import QuickAssignModal from './_components/QuickAssignModal';
 import AuthGate from './_components/AuthGate';
+import DispatchersModal from './_components/DispatchersModal';
 
 function isEditableTarget(el) {
   if (!el) return false;
@@ -59,6 +60,11 @@ function DespachadorDashboard() {
 
   const [modal, setModal] = useState({ type: null, data: null });
   const closeModal = () => setModal({ type: null, data: null });
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data?.user?.id || null));
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -198,6 +204,10 @@ function DespachadorDashboard() {
           <TileIcon icon="users" color="purple" size={48} />
           <span className="tile-label">Repartidores</span>
         </button>
+        <button className="tile" onClick={() => setModal({ type: 'dispatchers' })}>
+          <TileIcon icon="lock" color="red" size={48} />
+          <span className="tile-label">Despachadores</span>
+        </button>
         <button className="tile" onClick={() => setView(v => v === 'list' ? 'map' : 'list')}>
           <TileIcon icon="map" color="green" size={48} />
           <span className="tile-label">{view === 'list' ? 'Ver mapa' : 'Ver lista'}</span>
@@ -257,6 +267,7 @@ function DespachadorDashboard() {
         <AddPackageModal drivers={drivers} initialTrackingCode={modal.data?.initialTrackingCode || ''} onClose={closeModal} onSaved={refresh} />
       )}
       {modal.type === 'drivers' && <DriversModal drivers={drivers} onClose={closeModal} onChanged={refresh} />}
+      {modal.type === 'dispatchers' && <DispatchersModal currentUserId={currentUserId} onClose={closeModal} />}
       {modal.type === 'edit-location' && <EditLocationModal pkg={modal.data} onClose={closeModal} onSaved={refresh} />}
       {modal.type === 'view-evidence' && <EvidenceViewModal pkg={modal.data} onClose={closeModal} />}
       {modal.type === 'incident' && <IncidentModal pkg={modal.data} onClose={closeModal} onSaved={refresh} />}
