@@ -4,7 +4,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Modal from '../../../components/Modal';
 import { useToast } from '../../../components/Toast';
-import { createPackage, geocodeAddress, updatePackage } from '../../../lib/data';
+import { createPackage, geocodeAddress, updatePackage, extractLabelFromPhoto, compressImageFile } from '../../../lib/data';
 import { useReverseGeocode } from '../../../hooks/useReverseGeocode';
 
 // Leaflet toca `window` al cargarse, así que este mapa solo puede existir en el navegador.
@@ -21,7 +21,28 @@ export default function AddPackageModal({ drivers, initialTrackingCode = '', onC
   const [notes, setNotes] = useState('');
   const [coords, setCoords] = useState(null);
   const [verifyStatus, setVerifyStatus] = useState('');
+  const [readingLabel, setReadingLabel] = useState(false);
   const { address: resolvedAddress, loading: resolvingAddress } = useReverseGeocode(coords?.lat, coords?.lon);
+
+  async function handleLabelPhoto(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite elegir la misma foto otra vez si hace falta
+    if (!file) return;
+    setReadingLabel(true);
+    try {
+      const dataUrl = await compressImageFile(file);
+      const fields = await extractLabelFromPhoto(dataUrl);
+      if (fields.recipient) setRecipient(fields.recipient);
+      if (fields.phone) setPhone(fields.phone);
+      if (fields.address) setAddress(fields.address);
+      if (fields.trackingCode) setTracking(fields.trackingCode);
+      showToast('Etiqueta leída. Revisa los datos antes de guardar.');
+    } catch (e) {
+      showToast('Error al leer la etiqueta: ' + e.message, 'err');
+    } finally {
+      setReadingLabel(false);
+    }
+  }
 
   async function handleVerifyAddress() {
     const addr = address.trim();
@@ -62,6 +83,18 @@ export default function AddPackageModal({ drivers, initialTrackingCode = '', onC
     <Modal onClose={onClose}>
       <div className="modal-title">Nuevo paquete</div>
       <div className="modal-sub">Se guarda como pendiente hasta que asignes un repartidor.</div>
+
+      <div className="form-row">
+        <label>Leer etiqueta con foto (opcional)</label>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <label className="ghost-btn" style={{ cursor: 'pointer' }}>
+            {readingLabel ? 'Leyendo…' : 'Tomar o subir foto'}
+            <input type="file" accept="image/*" capture="environment" onChange={handleLabelPhoto} disabled={readingLabel} style={{ display: 'none' }} />
+          </label>
+          <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>La IA llena destinatario, teléfono, dirección y código — revisa antes de guardar.</span>
+        </div>
+      </div>
+
       <div className="form-row">
         <label>Código de rastreo</label>
         <input value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="Ej. MLPE086292745R" />

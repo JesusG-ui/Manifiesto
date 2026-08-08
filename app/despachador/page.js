@@ -28,6 +28,7 @@ import DeleteConfirmModal from './_components/DeleteConfirmModal';
 import QuickAssignModal from './_components/QuickAssignModal';
 import AuthGate from './_components/AuthGate';
 import DispatchersModal from './_components/DispatchersModal';
+import ImportPhotosModal from './_components/ImportPhotosModal';
 
 function isEditableTarget(el) {
   if (!el) return false;
@@ -200,6 +201,10 @@ function DespachadorDashboard() {
           <TileIcon icon="upload" color="teal" size={48} />
           <span className="tile-label">Importar CSV</span>
         </button>
+        <button className="tile" onClick={() => setModal({ type: 'import-photos' })}>
+          <TileIcon icon="camera" color="blue" size={48} />
+          <span className="tile-label">Importar por fotos</span>
+        </button>
         <button className="tile" onClick={() => setModal({ type: 'drivers' })}>
           <TileIcon icon="users" color="purple" size={48} />
           <span className="tile-label">Repartidores</span>
@@ -263,6 +268,7 @@ function DespachadorDashboard() {
 
       {modal.type === 'assign-scan' && <AssignByScanModal drivers={drivers} packages={packages} onClose={closeModal} onAssigned={refresh} />}
       {modal.type === 'import' && <ImportModal drivers={drivers} existingPackages={packages} onClose={closeModal} onImported={refresh} />}
+      {modal.type === 'import-photos' && <ImportPhotosModal drivers={drivers} onClose={closeModal} onImported={refresh} />}
       {modal.type === 'add-package' && (
         <AddPackageModal drivers={drivers} initialTrackingCode={modal.data?.initialTrackingCode || ''} onClose={closeModal} onSaved={refresh} />
       )}
