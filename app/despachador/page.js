@@ -1,5 +1,8 @@
 'use client';
 
+// Panel dinámico (lee Supabase en el navegador) — nunca pre-generar en el build.
+export const dynamic = 'force-dynamic';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Masthead from '../../components/Masthead';
 import StatsBar from '../../components/StatsBar';
