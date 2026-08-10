@@ -4,7 +4,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Modal from '../../../components/Modal';
 import { useToast } from '../../../components/Toast';
-import { updatePackage } from '../../../lib/data';
+import { updatePackage, saveKnownLocation } from '../../../lib/data';
 import { useReverseGeocode } from '../../../hooks/useReverseGeocode';
 
 // Leaflet toca `window` al cargarse, así que este mapa solo puede existir en el navegador.
@@ -17,9 +17,16 @@ export default function EditLocationModal({ pkg, onClose, onSaved }) {
 
   async function handleSave() {
     if (!coords) { showToast('Marca un punto en el mapa primero.', 'err'); return; }
-    try { await updatePackage(pkg.id, { lat: coords.lat, lon: coords.lon }); }
+    try {
+      await updatePackage(pkg.id, {
+        lat: coords.lat, lon: coords.lon,
+        location_status: 'confirmed', location_confidence: 100,
+        location_provider: 'manual', location_label: resolvedAddress || pkg.address,
+      });
+      await saveKnownLocation(pkg.address, coords.lat, coords.lon);
+    }
     catch (e) { showToast('Error al guardar: ' + e.message, 'err'); return; }
-    showToast('Ubicación actualizada.');
+    showToast('Ubicación confirmada y guardada.');
     onSaved();
     onClose();
   }

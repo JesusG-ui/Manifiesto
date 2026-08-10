@@ -6,9 +6,13 @@ function countsFor(list) {
   return c;
 }
 
-// Barra de contadores por estado. Si se pasa onSelect, los chips son clicables (filtro).
-export default function StatsBar({ list, activeStatus = 'all', onSelect }) {
+export default function StatsBar({ list, activeStatus = 'all', onSelect, activeLocation = 'all', onLocationSelect }) {
   const c = countsFor(list);
+  const lc = list.reduce((acc, p) => {
+    const key = p.locationStatus || 'unprocessed';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, { confirmed: 0, approximate: 0, not_found: 0, unprocessed: 0 });
   const chips = [
     { k: 'all', label: 'Todos', n: list.length },
     { k: 'pendiente', label: 'Pendientes', n: c.pendiente },
@@ -17,19 +21,15 @@ export default function StatsBar({ list, activeStatus = 'all', onSelect }) {
     { k: 'entregado', label: 'Entregados', n: c.entregado },
     { k: 'incidencia', label: 'Incidencias', n: c.incidencia },
   ];
-  return (
-    <div className="stats-row">
-      {chips.map(s => (
-        <div
-          key={s.k}
-          className={`stat-chip${activeStatus === s.k ? ' active' : ''}`}
-          style={{ cursor: onSelect ? 'pointer' : 'default' }}
-          onClick={() => onSelect && onSelect(s.k)}
-        >
-          <div className="stat-num">{s.n}</div>
-          <div className="stat-label">{s.label}</div>
-        </div>
-      ))}
-    </div>
-  );
+  const locations = [
+    { k: 'confirmed', label: 'Ubicación confirmada', n: lc.confirmed, tone: 'confirmed' },
+    { k: 'approximate', label: 'Ubicación aproximada', n: lc.approximate, tone: 'approximate' },
+    { k: 'not_found', label: 'Sin ubicación', n: lc.not_found, tone: 'missing' },
+    { k: 'unprocessed', label: 'Sin procesar', n: lc.unprocessed, tone: 'unprocessed' },
+  ];
+  return <div className="stats-row">
+    {chips.map(s => <div key={s.k} className={`stat-chip${activeStatus === s.k ? ' active' : ''}`} style={{ cursor: onSelect ? 'pointer' : 'default' }} onClick={() => onSelect?.(s.k)}><div className="stat-num">{s.n}</div><div className="stat-label">{s.label}</div></div>)}
+    <div className="stats-divider" aria-hidden="true" />
+    {locations.map(s => <div key={s.k} className={`stat-chip stat-chip-location ${s.tone}${activeLocation === s.k ? ' active' : ''}`} style={{ cursor: onLocationSelect ? 'pointer' : 'default' }} onClick={() => onLocationSelect?.(activeLocation === s.k ? 'all' : s.k)}><div className="stat-num">{s.n}</div><div className="stat-label">{s.label}</div></div>)}
+  </div>;
 }

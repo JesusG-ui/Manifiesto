@@ -57,11 +57,14 @@ function DespachadorDashboard() {
   const [filterText, setFilterText] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDriver, setFilterDriver] = useState('all');
+  const [filterLocation, setFilterLocation] = useState('all');
   const [view, setView] = useState('list');
 
   const [modal, setModal] = useState({ type: null, data: null });
   const closeModal = () => setModal({ type: null, data: null });
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [geocodeProgress, setGeocodeProgress] = useState(null);
+  const [singleGeocodeId, setSingleGeocodeId] = useState(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data?.user?.id || null));
@@ -129,6 +132,7 @@ function DespachadorDashboard() {
     return packages.filter(p => {
       if (filterStatus !== 'all' && p.status !== filterStatus) return false;
       if (filterDriver !== 'all' && p.driver !== filterDriver) return false;
+      if (filterLocation !== 'all' && p.locationStatus !== filterLocation) return false;
       if (filterText) {
         const t = filterText.toLowerCase();
         const hay = (p.recipient + ' ' + p.address + ' ' + p.id + ' ' + (p.phone || '') + ' ' + (p.trackingCode || '')).toLowerCase();
@@ -136,12 +140,44 @@ function DespachadorDashboard() {
       }
       return true;
     }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }, [packages, filterStatus, filterDriver, filterText]);
+  }, [packages, filterStatus, filterDriver, filterLocation, filterText]);
 
   async function handleReassign(pkgId, driverName) {
     const driverObj = driverName ? drivers.find(d => d.name === driverName) : null;
     try { await reassignPackage(pkgId, driverObj ? driverObj.id : null); showToast('Reasignado.'); refresh(); }
     catch (e) { showToast('Error al reasignar: ' + e.message, 'err'); }
+  }
+
+  async function handleSingleGeocode(pkg) {
+    if (singleGeocodeId) return;
+    setSingleGeocodeId(pkg.id);
+    try {
+      const result = await geocodeAddress(pkg.address);
+      if (result && (result.confidence ?? 0) >= 75) {
+        await updatePackage(pkg.id, {
+          lat: result.lat, lon: result.lon, location_status: 'confirmed',
+          location_confidence: Math.round(result.confidence), location_provider: result.provider,
+          location_label: result.display,
+        });
+        showToast(`Ubicación encontrada (${Math.round(result.confidence)}% de confianza).`);
+        await refresh();
+      } else if (result) {
+        await updatePackage(pkg.id, {
+          lat: result.lat, lon: result.lon, location_status: 'approximate',
+          location_confidence: Math.round(result.confidence), location_provider: result.provider,
+          location_label: result.display,
+        });
+        showToast(`Encontré una zona aproximada (${Math.round(result.confidence)}%). Revísala antes de guardarla.`);
+        setModal({ type: 'edit-location', data: { ...pkg, lat: result.lat, lon: result.lon } });
+      } else {
+        await updatePackage(pkg.id, { lat: null, lon: null, location_status: 'not_found', location_confidence: 0, location_provider: 'google', location_label: null });
+        showToast('No se encontró una ubicación suficientemente precisa. Usa “Ajustar ubicación”.', 'err');
+      }
+    } catch (e) {
+      showToast('Error al ubicar la dirección: ' + e.message, 'err');
+    } finally {
+      setSingleGeocodeId(null);
+    }
   }
 
   function handleExport() {
@@ -158,15 +194,43 @@ function DespachadorDashboard() {
   }
 
   async function handleBulkGeocode() {
-    const targets = packages.filter(p => !p.lat || !p.lon).slice(0, 30);
+    if (geocodeProgress?.running) return;
+    const targets = packages.filter(p => p.locationStatus !== 'confirmed');
     if (targets.length === 0) { showToast('Todos los paquetes ya tienen ubicación.'); return; }
     showToast('Ubicando ' + targets.length + ' direcciones… tardará un par de minutos.');
     let done = 0;
-    for (const pkg of targets) {
+    let review = 0;
+    setGeocodeProgress({ running: true, processed: 0, total: targets.length, found: 0, review: 0 });
+    for (let index = 0; index < targets.length; index++) {
+      const pkg = targets[index];
       try {
         const r = await geocodeAddress(pkg.address);
-        if (r) { await updatePackage(pkg.id, { lat: r.lat, lon: r.lon }); done++; }
+        // Solo guarda automaticamente resultados fuertes. Una coincidencia de
+        // zona puede ser util para revisar, pero no debe fingir que es la puerta.
+        if (r && (r.confidence ?? 0) >= 75) {
+          await updatePackage(pkg.id, {
+            lat: r.lat, lon: r.lon, location_status: 'confirmed',
+            location_confidence: Math.round(r.confidence), location_provider: r.provider, location_label: r.display,
+          });
+          done++;
+        } else if (r) {
+          await updatePackage(pkg.id, {
+            lat: r.lat, lon: r.lon, location_status: 'approximate',
+            location_confidence: Math.round(r.confidence), location_provider: r.provider, location_label: r.display,
+          });
+          review++;
+        } else {
+          await updatePackage(pkg.id, { lat: null, lon: null, location_status: 'not_found', location_confidence: 0, location_provider: 'google', location_label: null });
+          review++;
+        }
       } catch (e) {}
+      setGeocodeProgress({
+        running: true,
+        processed: index + 1,
+        total: targets.length,
+        found: done,
+        review,
+      });
       await new Promise(res => setTimeout(res, 1100));
     }
     const d = await fetchDrivers();
@@ -174,7 +238,18 @@ function DespachadorDashboard() {
     const fresh = await fetchPackages(d);
     setPackages(fresh);
     const remaining = fresh.filter(p => !p.lat || !p.lon).length;
-    showToast('Ubicadas ' + done + ' direcciones' + (remaining > 0 ? ' · quedan ' + remaining + ', vuelve a tocar el botón' : '.'));
+    setGeocodeProgress({
+      running: false,
+      processed: targets.length,
+      total: targets.length,
+      found: done,
+      review,
+    });
+    showToast(
+      'Ubicadas ' + done + ' direcciones con alta confianza' +
+      (review > 0 ? ' · ' + review + ' requieren revisión' : '') +
+      (remaining > 0 ? ' · quedan ' + remaining + ' sin punto confirmado' : '.')
+    );
   }
 
   if (loading) {
@@ -185,7 +260,13 @@ function DespachadorDashboard() {
     <>
       <Masthead roleLabel="Despachador" onLogout={handleLogout} />
 
-      <StatsBar list={packages} activeStatus={filterStatus} onSelect={setFilterStatus} />
+      <StatsBar
+        list={packages}
+        activeStatus={filterStatus}
+        onSelect={setFilterStatus}
+        activeLocation={filterLocation}
+        onLocationSelect={setFilterLocation}
+      />
 
       <div className="section-label">Herramientas</div>
       <div className="tile-grid">
@@ -217,15 +298,42 @@ function DespachadorDashboard() {
           <TileIcon icon="map" color="green" size={48} />
           <span className="tile-label">{view === 'list' ? 'Ver mapa' : 'Ver lista'}</span>
         </button>
-        <button className="tile" onClick={handleBulkGeocode}>
+        <button className="tile" onClick={handleBulkGeocode} disabled={geocodeProgress?.running}>
           <TileIcon icon="pin" color="yellow" size={48} />
-          <span className="tile-label">Ubicar direcciones</span>
+          <span className="tile-label">{geocodeProgress?.running ? 'Ubicando…' : 'Ubicar direcciones'}</span>
         </button>
         <button className="tile" onClick={handleExport}>
           <TileIcon icon="download" color="blue" size={48} />
           <span className="tile-label">Exportar</span>
         </button>
       </div>
+
+      {geocodeProgress ? (
+        <div className="geocode-progress" aria-live="polite">
+          <div className="geocode-progress-head">
+            <strong>{geocodeProgress.running ? 'Ubicando direcciones' : 'Ubicación terminada'}</strong>
+            <span>{Math.round((geocodeProgress.processed / geocodeProgress.total) * 100)}%</span>
+          </div>
+          <div
+            className="geocode-progress-track"
+            role="progressbar"
+            aria-label="Avance de ubicación de direcciones"
+            aria-valuemin="0"
+            aria-valuemax={geocodeProgress.total}
+            aria-valuenow={geocodeProgress.processed}
+          >
+            <div
+              className="geocode-progress-fill"
+              style={{ width: `${(geocodeProgress.processed / geocodeProgress.total) * 100}%` }}
+            />
+          </div>
+          <div className="geocode-progress-meta">
+            <span>{geocodeProgress.processed} de {geocodeProgress.total} procesadas</span>
+            <span>{geocodeProgress.found} ubicadas</span>
+            <span>{geocodeProgress.review} para revisar</span>
+          </div>
+        </div>
+      ) : null}
 
       <div className="section-label">Paquetes</div>
       <div className="scanner-hint">Lector de códigos conectado: escanea cualquier paquete (sin hacer clic en nada) para asignarlo al instante.</div>
@@ -235,10 +343,17 @@ function DespachadorDashboard() {
           <option value="all">Todos los repartidores</option>
           {drivers.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
         </select>
+        <select className="tf-select" value={filterLocation} onChange={(e) => setFilterLocation(e.target.value)} aria-label="Filtrar por ubicación">
+          <option value="all">Todas las ubicaciones</option>
+          <option value="confirmed">Ubicación confirmada</option>
+          <option value="approximate">Ubicación aproximada</option>
+          <option value="not_found">Sin ubicación</option>
+          <option value="unprocessed">Sin procesar</option>
+        </select>
       </div>
 
       {view === 'map' ? (
-        <FullMap packages={packages} />
+        <FullMap packages={filteredPackages} />
       ) : packages.length === 0 ? (
         <div className="empty-state">
           <h3>Aún no hay paquetes cargados</h3>
@@ -256,6 +371,9 @@ function DespachadorDashboard() {
               drivers={drivers}
               actions={{
                 onReassign: handleReassign,
+                onLocateAddress: handleSingleGeocode,
+                locating: singleGeocodeId === pkg.id,
+                locateDisabled: !!singleGeocodeId && singleGeocodeId !== pkg.id,
                 onEditLocation: (p) => setModal({ type: 'edit-location', data: p }),
                 onViewEvidence: (p) => setModal({ type: 'view-evidence', data: p }),
                 onMarkIncident: (p) => setModal({ type: 'incident', data: p }),

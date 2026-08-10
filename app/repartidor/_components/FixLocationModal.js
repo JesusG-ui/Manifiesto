@@ -46,7 +46,11 @@ export default function FixLocationModal({ pkg, onClose, onSaved }) {
     if (!coords) { showToast('Marca un punto en el mapa primero.', 'err'); return; }
     setSaving(true);
     try {
-      await updatePackage(pkg.id, { lat: coords.lat, lon: coords.lon });
+      await updatePackage(pkg.id, {
+        lat: coords.lat, lon: coords.lon,
+        location_status: 'confirmed', location_confidence: 100,
+        location_provider: 'manual', location_label: resolvedAddress || pkg.address,
+      });
       await saveKnownLocation(pkg.address, coords.lat, coords.lon);
     } catch (e) { showToast('Error al guardar: ' + e.message, 'err'); setSaving(false); return; }
     showToast('Ubicación corregida y guardada para la próxima vez.');
