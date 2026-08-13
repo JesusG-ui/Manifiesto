@@ -97,6 +97,10 @@ function isInsideArequipa(lat, lon) {
 }
 
 function scoreCandidate(candidate, parsed) {
+  // Fuera de Arequipa no es "poco confiable", es un resultado equivocado —
+  // se descarta directo, no se penaliza nada más (evita que otros bonos lo
+  // rescaten y termine mostrando México, Filipinas, etc.).
+  if (!isInsideArequipa(candidate.lat, candidate.lon)) return 0;
   const display = normalizePeruvianAddress(candidate.display || '');
   let score = 25 + Math.round(tokenSimilarity(parsed.normalized, display) * 45);
   if (parsed.streetName) {
@@ -114,7 +118,6 @@ function scoreCandidate(candidate, parsed) {
   if (hasExpectedLote) score += 10;
   if (/jacobo hunter|hunter/.test(display)) score += 8;
   if (/arequipa/.test(display)) score += 5;
-  if (!isInsideArequipa(candidate.lat, candidate.lon)) score -= 60;
   if (/distrito de arequipa|provincia de arequipa/.test(display) && tokenSimilarity(parsed.normalized, display) < 0.35) score -= 30;
   if (candidate.accuracy === 'rooftop' || candidate.accuracy === 'parcel') score += 10;
   return Math.max(0, Math.min(100, score));
@@ -155,7 +158,10 @@ async function geocodeWithGeodir(address, key) {
 }
 
 async function geocodeWithGoogle(address, key) {
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&region=pe&language=es&key=${key}`;
+  // OJO: `region` solo es una sugerencia de ranking, no restringe el país —
+  // por eso antes se colaban resultados de México, Filipinas, etc. cuando el
+  // texto de la dirección era ambiguo. `components=country:PE` sí es un filtro real.
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&components=country:PE&region=pe&language=es&key=${key}`;
   const data = await fetchJson(url);
   if (data.status === 'ZERO_RESULTS') return [];
   if (data.status !== 'OK') {

@@ -6,6 +6,7 @@ import Modal from '../../../components/Modal';
 import { useToast } from '../../../components/Toast';
 import { createPackage, geocodeAddress, updatePackage, extractLabelFromPhoto, compressImageFile } from '../../../lib/data';
 import { useReverseGeocode } from '../../../hooks/useReverseGeocode';
+import AddressAutocomplete from '../../../components/AddressAutocomplete';
 
 // Leaflet toca `window` al cargarse, así que este mapa solo puede existir en el navegador.
 const PinPickerMap = dynamic(() => import('../../../components/map/PinPickerMap'), { ssr: false });
@@ -42,6 +43,11 @@ export default function AddPackageModal({ drivers, initialTrackingCode = '', onC
     } finally {
       setReadingLabel(false);
     }
+  }
+
+  function handleAddressSelect({ address: fullAddress, lat, lon }) {
+    if (fullAddress) setAddress(fullAddress);
+    if (lat != null && lon != null) { setCoords({ lat, lon }); setVerifyStatus('Ubicada desde el autocompletado.'); }
   }
 
   async function handleVerifyAddress() {
@@ -109,7 +115,12 @@ export default function AddPackageModal({ drivers, initialTrackingCode = '', onC
       </div>
       <div className="form-row">
         <label>Dirección</label>
-        <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Calle, número, referencia, distrito" />
+        <AddressAutocomplete
+          value={address}
+          onChange={setAddress}
+          onSelect={handleAddressSelect}
+          placeholder="Escribe y elige una sugerencia, o sigue escribiendo a mano"
+        />
         <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center' }}>
           <button className="ghost-btn" onClick={handleVerifyAddress}>Buscar dirección en el mapa</button>
           <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{verifyStatus}</span>
