@@ -181,6 +181,36 @@ async function geocodeWithGoogle(address, key) {
   }));
 }
 
+async function geocodeWithGooglePlacesText(address, key) {
+  // Places API (New) Text Search entiende texto libre — negocios, referencias
+  // ("frente a la posta", "grifo primax"), no solo direcciones estructuradas.
+  // Geocoding API solo sabe leer calle+numero; esto cubre justo el caso de
+  // direcciones informales que Geocoding no encuentra.
+  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': key,
+      'X-Goog-FieldMask': 'places.formattedAddress,places.location',
+    },
+    body: JSON.stringify({
+      textQuery: address,
+      languageCode: 'es',
+      regionCode: 'PE',
+      locationBias: { circle: { center: { latitude: -16.409, longitude: -71.537 }, radius: 30000 } },
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`Google Places Text Search: ${data.error?.status || res.status}${data.error?.message ? ' — ' + data.error.message : ''}`);
+  return (data.places || []).slice(0, 3).map(p => ({
+    lat: p.location?.latitude,
+    lon: p.location?.longitude,
+    display: p.formattedAddress || '',
+    provider: 'google-places',
+    accuracy: null,
+  })).filter(c => c.lat != null && c.lon != null);
+}
+
 async function geocodeWithNominatim(address) {
   const url = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=3&countrycodes=pe&q=' + encodeURIComponent(address);
   const data = await fetchJson(url, {
@@ -222,6 +252,11 @@ export async function GET(request) {
     // Google factura por solicitud: como máximo dos variantes por paquete.
     if (googleKey) {
       for (const variant of variants.slice(0, 2)) { jobs.push(geocodeWithGoogle(variant, googleKey)); jobLabels.push('google'); }
+      // Una sola llamada a Text Search con la dirección tal cual la escribió el
+      // cliente (no la variante normalizada) — es la que mejor conserva
+      // referencias y nombres propios que Geocoding ignora.
+      const textQuery = /\barequipa\b/i.test(address) ? address : `${address}, Arequipa, Peru`;
+      jobs.push(geocodeWithGooglePlacesText(textQuery, googleKey)); jobLabels.push('google-places');
     }
     if (mapboxToken) for (const variant of variants) { jobs.push(geocodeWithMapbox(variant, mapboxToken)); jobLabels.push('mapbox'); }
     if (geodirKey) for (const variant of variants) { jobs.push(geocodeWithGeodir(variant, geodirKey)); jobLabels.push('geodir'); }
