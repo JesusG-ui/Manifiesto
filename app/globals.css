@@ -133,6 +133,13 @@ input,select,textarea{font-family:var(--f-body);}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
 .modal-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;color:var(--ink-soft);}
 
+/* ---- tareo mensual ---- */
+.tareo-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-right:26px;}.tareo-month{display:flex;flex-direction:column;gap:4px;min-width:170px;}
+.tareo-month span,.tareo-period{font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);}.tareo-month select{height:38px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);padding:0 10px;text-transform:capitalize;color:var(--ink);}.tareo-period{margin:12px 0 8px;}
+.tareo-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px;}.tareo-kpis>div{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 10px;display:flex;flex-direction:column;gap:4px;}.tareo-kpis strong{font-size:21px;font-variant-numeric:tabular-nums;}.tareo-kpis span{font-size:10.5px;color:var(--ink-soft);line-height:1.2;}.tareo-kpis .success strong,.tareo-table .success{color:var(--forest);}.tareo-kpis .danger strong,.tareo-table .danger{color:var(--brick);}
+.tareo-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;}.tareo-table{width:100%;border-collapse:collapse;font-size:12px;min-width:650px;}.tareo-table th{text-align:right;padding:9px 10px;background:var(--paper);color:var(--ink-soft);font-size:10px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}.tareo-table th:first-child,.tareo-table td:first-child{text-align:left;}.tareo-table td{text-align:right;padding:11px 10px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums;}.tareo-rank{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#eef0fe;color:var(--route);margin-right:7px;font-size:10px;font-weight:700;}.tareo-rate{display:inline-block;background:#edf8f2;color:var(--forest);border-radius:20px;padding:4px 8px;font-weight:700;}.tareo-note{margin-top:10px;padding:9px 11px;background:#fff8e8;border:1px solid #f3c66d;border-radius:8px;font-size:11.5px;color:#805914;}
+@media(max-width:700px){.tareo-head{flex-direction:column;gap:4px}.tareo-month{width:100%}.tareo-kpis{grid-template-columns:repeat(2,1fr)}.tareo-kpis>div:last-child{grid-column:span 2}.modal-content-wide{padding-left:14px;padding-right:14px}}
+
 /* ---- mapa ---- */
 #map{width:100%;height:420px;border-radius:12px;border:1px solid var(--line);}
 .mini-map{width:100%;height:200px;border-radius:12px;border:1px solid var(--line);margin-top:8px;}

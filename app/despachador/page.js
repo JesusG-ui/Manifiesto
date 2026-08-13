@@ -29,6 +29,7 @@ import QuickAssignModal from './_components/QuickAssignModal';
 import AuthGate from './_components/AuthGate';
 import DispatchersModal from './_components/DispatchersModal';
 import ImportPhotosModal from './_components/ImportPhotosModal';
+import TareoModal from './_components/TareoModal';
 
 function isEditableTarget(el) {
   if (!el) return false;
@@ -290,6 +291,10 @@ function DespachadorDashboard() {
           <TileIcon icon="users" color="purple" size={48} />
           <span className="tile-label">Repartidores</span>
         </button>
+        <button className="tile" onClick={() => setModal({ type: 'tareo' })}>
+          <TileIcon icon="clipboard" color="green" size={48} />
+          <span className="tile-label">Tareo</span>
+        </button>
         <button className="tile" onClick={() => setModal({ type: 'dispatchers' })}>
           <TileIcon icon="lock" color="red" size={48} />
           <span className="tile-label">Despachadores</span>
@@ -392,6 +397,7 @@ function DespachadorDashboard() {
       )}
       {modal.type === 'drivers' && <DriversModal drivers={drivers} onClose={closeModal} onChanged={refresh} />}
       {modal.type === 'dispatchers' && <DispatchersModal currentUserId={currentUserId} onClose={closeModal} />}
+      {modal.type === 'tareo' && <TareoModal drivers={drivers} packages={packages} onClose={closeModal} />}
       {modal.type === 'edit-location' && <EditLocationModal pkg={modal.data} onClose={closeModal} onSaved={refresh} />}
       {modal.type === 'view-evidence' && <EvidenceViewModal pkg={modal.data} onClose={closeModal} />}
       {modal.type === 'incident' && <IncidentModal pkg={modal.data} onClose={closeModal} onSaved={refresh} />}

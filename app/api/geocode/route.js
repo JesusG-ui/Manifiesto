@@ -157,7 +157,13 @@ async function geocodeWithGeodir(address, key) {
 async function geocodeWithGoogle(address, key) {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&region=pe&language=es&key=${key}`;
   const data = await fetchJson(url);
-  if (data.status !== 'OK') return [];
+  if (data.status === 'ZERO_RESULTS') return [];
+  if (data.status !== 'OK') {
+    // No lo tragamos en silencio: REQUEST_DENIED / OVER_QUERY_LIMIT / etc. casi
+    // siempre significan que la API de Geocoding no está habilitada, falta
+    // facturación en el proyecto de Google Cloud, o la key está restringida.
+    throw new Error(`Google Geocoding: ${data.status}${data.error_message ? ' — ' + data.error_message : ''}`);
+  }
   return (data.results || []).slice(0, 3).map(r => ({
     lat: Number(r.geometry.location.lat),
     lon: Number(r.geometry.location.lng),
@@ -206,18 +212,23 @@ export async function GET(request) {
 
   try {
     const jobs = [];
+    const jobLabels = [];
     // Google factura por solicitud: como máximo dos variantes por paquete.
     if (googleKey) {
-      for (const variant of variants.slice(0, 2)) jobs.push(geocodeWithGoogle(variant, googleKey));
-    } else {
-      // Proveedores de respaldo solo cuando Google no está configurado.
-      if (mapboxToken) for (const variant of variants) jobs.push(geocodeWithMapbox(variant, mapboxToken));
-      if (geodirKey) for (const variant of variants) jobs.push(geocodeWithGeodir(variant, geodirKey));
-      // Una sola consulta para respetar el límite de la instancia pública.
-      jobs.push(geocodeWithNominatim(variants[0]));
+      for (const variant of variants.slice(0, 2)) { jobs.push(geocodeWithGoogle(variant, googleKey)); jobLabels.push('google'); }
     }
+    if (mapboxToken) for (const variant of variants) { jobs.push(geocodeWithMapbox(variant, mapboxToken)); jobLabels.push('mapbox'); }
+    if (geodirKey) for (const variant of variants) { jobs.push(geocodeWithGeodir(variant, geodirKey)); jobLabels.push('geodir'); }
+    // Nominatim siempre corre como red de respaldo: si Google/Mapbox/Geodir
+    // fallan (key mal configurada, sin facturación, sin cuota) o no encuentran
+    // nada, esto evita que la dirección se quede sin ningún candidato.
+    jobs.push(geocodeWithNominatim(variants[0]));
+    jobLabels.push('openstreetmap');
 
     const settled = await Promise.allSettled(jobs);
+    const providerErrors = settled
+      .map((r, i) => r.status === 'rejected' ? `${jobLabels[i]}: ${r.reason?.message || r.reason}` : null)
+      .filter(Boolean);
     const candidates = dedupeCandidates(settled.flatMap(r => r.status === 'fulfilled' ? r.value : []))
       .map(candidate => ({ ...candidate, confidence: scoreCandidate(candidate, parsed) }))
       .sort((a, b) => b.confidence - a.confidence);
@@ -232,6 +243,7 @@ export async function GET(request) {
       normalizedAddress: parsed.normalized,
       alternatives: candidates.slice(1, 4),
       needsReview: !result || result.confidence < 75,
+      providerErrors: providerErrors.length ? providerErrors : undefined,
     });
   } catch (e) {
     return Response.json({ error: e.message }, { status: 500 });

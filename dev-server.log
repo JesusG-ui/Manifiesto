@@ -1,0 +1,40 @@
+
+> manifiesto-web@0.1.0 dev
+> next dev -p 3000
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1517ms
+ ✓ Compiled /api/geocode in 193ms (29 modules)
+ GET /api/geocode?address=Av.%20Brasilia%20404-A%20Hunter%20(oficina%20LEGTEC)%20JACOCB%20HUNTER%2C%20AREQUIPA%2004011%20JACOSO%20HUNTER%20AREQUIPA 200 in 668ms
+ GET /api/geocode?address=calle%20los%20cipreses%20212%20-%20pueblo%20tradicional%20pampas%20del%20cusco%20referencia%2C%20cerca%20al%20Unico%20estadio%20del%20pampas%20del%20cusco%2C%20casa%20ubicada%20frente%20jard%C3%ADn%20inicial%20pampas%20del%20Cusco 200 in 295ms
+ ✓ Compiled in 68ms (29 modules)
+ GET /api/geocode?address=Av.%20Brasilia%20404-A%20Hunter%20(oficina%20LEGTEC)%20JACOCB%20HUNTER%2C%20AREQUIPA%2004011%20JACOSO%20HUNTER%20AREQUIPA 200 in 219ms
+ GET /api/geocode?address=calle%20los%20cipreses%20212%20-%20pueblo%20tradicional%20pampas%20del%20cusco%20referencia%2C%20cerca%20al%20Unico%20estadio%20del%20pampas%20del%20cusco%2C%20casa%20ubicada%20frente%20jard%C3%ADn%20inicial%20pampas%20del%20Cusco 200 in 114ms
+ ○ Compiling /despachador ...
+ ✓ Compiled /despachador in 3.2s (663 modules)
+ GET /despachador 200 in 3406ms
+ GET /api/geocode?address=calle%20los%20cipreses%20212%20-%20pueblo%20tradicional%20pampas%20del%20cusco%20referencia%2C%20cerca%20al%20Unico%20estadio%20del%20pampas%20del%20cusco%2C%20casa%20ubicada%20frente%20jard%C3%ADn%20inicial%20pampas%20del%20Cusco 200 in 207ms
+ GET /api/geocode?address=Av.%20Juan%20Valasco%20Alvarado%20LEON%20DEL%20SUR%20K-13%20J.%20HUNTER 200 in 816ms
+ ✓ Compiled in 280ms (659 modules)
+ ✓ Compiled /api/geocode in 58ms (326 modules)
+ GET /api/geocode?address=Av.%20Brasilia%20404-A%20Hunter%20(oficina%20LEGTEC)%20JACOCB%20HUNTER%2C%20AREQUIPA 200 in 284ms
+ ✓ Compiled in 347ms (663 modules)
+ ✓ Compiled in 224ms (659 modules)
+ ✓ Compiled in 276ms (659 modules)
+ ✓ Compiled in 297ms (659 modules)
+ ✓ Compiled in 211ms (659 modules)
+ ✓ Compiled in 190ms (659 modules)
+ ✓ Compiled in 76ms (337 modules)
+ ✓ Compiled in 183ms (659 modules)
+ ✓ Compiled in 181ms (659 modules)
+ ✓ Compiled in 223ms (659 modules)
+ ✓ Compiled in 155ms (659 modules)
+ ✓ Compiled /_not-found in 95ms (648 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 941ms (875 modules)
+ GET /despachador 404 in 1210ms
+ GET /despachador 200 in 94ms
